@@ -26,6 +26,7 @@ venv/
 # Vector database (RAG)
 # =========================
 data/vector_db/
+data/documents/
 
 # =========================
 # Temporary uploaded files 

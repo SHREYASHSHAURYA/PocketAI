@@ -17,7 +17,7 @@ def try_tool(user_input):
 
     expression = extract_expression(user_input)
 
-    if expression and any(op in expression for op in "+-*/"):
+    if expression:
         result = calculate(expression)
 
         if result:
