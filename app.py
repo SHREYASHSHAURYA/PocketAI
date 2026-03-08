@@ -1,0 +1,82 @@
+from llm.llm_loader import generate_response
+from memory.memory_manager import MemoryManager
+from rag.retriever import retrieve_context
+from agents.tool_agent import try_tool
+
+memory = MemoryManager()
+
+SYSTEM_PROMPT = """
+You are PocketAI, a helpful AI assistant.
+
+Capabilities:
+- Answer general questions
+- Help with programming
+- Explain code
+- Debug code
+- Write code in Python, C, C++, Java and other languages
+
+Rules:
+- Only generate code when the user asks for programming help.
+- When writing code, always format it inside proper code blocks.
+- Keep explanations clear and concise.
+"""
+
+while True:
+    print("You: ", end="")
+    lines = []
+    while True:
+        line = input()
+        if line == "":
+            break
+        lines.append(line)
+
+    user_input = "\n".join(lines).strip()
+
+    if not user_input:
+        continue
+
+    if user_input.lower() == "exit":
+        break
+
+
+    tool_result = try_tool(user_input)
+
+    if tool_result is not None:
+        print("AI:", tool_result)
+        memory.add_user_message(user_input)
+        memory.add_ai_message(tool_result)
+        continue
+
+
+    context = retrieve_context(user_input)
+
+    if context:
+        user_message = f"Document context:\n{context}\n\nQuestion: {user_input}"
+    else:
+        user_message = user_input
+
+    messages = (
+        [{"role": "system", "content": SYSTEM_PROMPT}]
+        + memory.get_messages()
+        + [{"role": "user", "content": user_message}]
+    )
+
+    response = generate_response(messages)
+
+    print("AI:", response)
+
+    memory.add_user_message(user_input)
+    memory.add_ai_message(response)
+
+
+
+
+
+
+
+
+
+
+
+
+
