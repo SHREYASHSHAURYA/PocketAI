@@ -1,10 +1,28 @@
 import re
 import math
 
+def cbrt(x):
+    x = float(x)
+
+    if x == 0:
+        return 0.0
+
+    sign = 1
+    if x < 0:
+        sign = -1
+        x = abs(x)
+
+    root = round(x ** (1/3))
+
+    if root ** 3 == x:
+        return float(sign * root)
+
+    return sign * (x ** (1/3))
 
 SAFE_GLOBALS = {
     "__builtins__": {},
     "sqrt": math.sqrt,
+    "cbrt": cbrt,
     "sin": math.sin,
     "cos": math.cos,
     "tan": math.tan,
@@ -17,9 +35,10 @@ def normalize_language(text):
 
     t = text.lower()
 
-    t = re.sub(r"square root of\s+(\d+)", r"sqrt(\1)", t)
-    t = re.sub(r"cube root of\s+(\d+)", r"(\1)**(1/3)", t)
-    t = re.sub(r"cube of\s+(\d+)", r"(\1)**3", t)
+    t = re.sub(r"square root of\s+(-?\d+(\.\d+)?)", r"sqrt(\1)", t)
+    t = re.sub(r"cube root of\s+(-?\d+(\.\d+)?)", r"cbrt(\1)", t)
+    t = re.sub(r"cube of\s+(-?\d+(\.\d+)?)", r"(\1)**3", t)
+    t = re.sub(r"square of\s+(-?\d+(\.\d+)?)", r"(\1)**2", t)
 
     t = re.sub(r"(\d+)\s+to the power of\s+(\d+)", r"(\1)**(\2)", t)
     t = re.sub(r"power of\s+(\d+)\s+(\d+)", r"(\1)**(\2)", t)
@@ -66,11 +85,11 @@ def extract_expression(text):
         if candidate:
             return candidate
 
-    func_match = re.search(r"(sqrt|sin|cos|tan|log)\s*\([^\)]*\)", normalized)
+    func_match = re.search(r"(sqrt|cbrt|sin|cos|tan|log)\s*\([^\)]*\)", normalized)
     if func_match:
         return func_match.group()
 
-    power_match = re.search(r"\([^\)]*\)\*\*\([^\)]*\)", normalized)
+    power_match = re.search(r"-?\d+(\.\d+)?\s*\*\*\s*-?\d+(\.\d+)?", normalized)
     if power_match:
         return power_match.group()
 
@@ -117,13 +136,13 @@ def extract_expression(text):
     average_match = re.search(r"average of ([0-9,\s]+)", normalized)
     if average_match:
         nums = average_match.group(1)
-        values = [n.strip() for n in nums.split(",") if n.strip()]
+        values = re.findall(r"-?\d+\.?\d*", nums)
         return f"({'+'.join(values)})/{len(values)}"
 
     sum_match = re.search(r"sum of ([0-9,\s]+)", normalized)
     if sum_match:
         nums = sum_match.group(1)
-        values = [n.strip() for n in nums.split(",") if n.strip()]
+        values = re.findall(r"-?\d+\.?\d*", nums)
         return "+".join(values)
 
     match = re.search(r"[0-9\.\+\-\*\/\^\(\) ]+", normalized)
