@@ -99,6 +99,45 @@ while True:
 
     response = generate_response(messages)
 
+    lower_response = response.lower()
+
+    uncertain_phrases = [
+        "i don't know",
+        "i do not know",
+        "not sure",
+        "cannot find",
+        "no information",
+        "as of my last update",
+        "i don't have real-time",
+        "i do not have real-time",
+        "i don't have access"
+    ]
+
+    if any(p in lower_response for p in uncertain_phrases):
+
+        from tools.web_search import web_search
+
+        results = web_search(user_input)
+
+        if results:
+
+            user_message = f"""
+    Answer the question using the web search results below.
+    Give a short and direct answer.
+
+    {results}
+
+    Question: {user_input}
+    """
+
+            messages = (
+                [{"role": "system", "content": SYSTEM_PROMPT}]
+                + memory.get_messages()
+                + [{"role": "user", "content": user_message}]
+            )
+
+            response = generate_response(messages)
+
     print("AI:", response)
 
     memory.add_user_message(user_input)
