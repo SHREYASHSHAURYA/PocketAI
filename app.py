@@ -42,9 +42,36 @@ while True:
     tool_result = try_tool(user_input)
 
     if tool_result is not None:
-        print("AI:", tool_result)
-        memory.add_user_message(user_input)
-        memory.add_ai_message(tool_result)
+  
+        if tool_result.startswith("Web search results:"):
+
+            user_message = f"""
+    Answer the question using the web search results below.
+    Give a short and direct answer.
+
+    {tool_result}
+
+    Question: {user_input}
+    """
+
+            messages = (
+                [{"role": "system", "content": SYSTEM_PROMPT}]
+                + memory.get_messages()
+                + [{"role": "user", "content": user_message}]
+            )
+
+            response = generate_response(messages)
+
+            print("AI:", response)
+
+            memory.add_user_message(user_input)
+            memory.add_ai_message(response)
+
+        else:
+            print("AI:", tool_result)
+            memory.add_user_message(user_input)
+            memory.add_ai_message(tool_result)
+
         continue
 
 
