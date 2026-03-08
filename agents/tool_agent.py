@@ -1,17 +1,26 @@
-from tools.calculator import calculate
+from tools.calculator import calculate, extract_expression
 from tools.python_executor import run_python
+
+
+TOOLS = {
+    "python": run_python,
+}
+
 
 def try_tool(user_input):
 
-    text = user_input.lower()
-
-    if text.startswith("calculate"):
-        expression = user_input.replace("calculate", "").strip()
-        return calculate(expression)
+    text = user_input.lower().strip()
 
     if text.startswith("run python"):
-        code = user_input.replace("run python", "").strip()
+        code = user_input[len("run python"):].strip()
         return run_python(code)
 
-    return None
+    expression = extract_expression(user_input)
 
+    if expression and any(op in expression for op in "+-*/"):
+        result = calculate(expression)
+
+        if result:
+            return result
+
+    return None

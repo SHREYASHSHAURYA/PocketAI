@@ -51,7 +51,16 @@ while True:
     context = retrieve_context(user_input)
 
     if context:
-        user_message = f"Document context:\n{context}\n\nQuestion: {user_input}"
+        user_message = f"""
+        Use the following document context to answer the question.
+
+        If the answer is not in the context, say you do not know.
+
+        Context:
+        {context}
+
+        Question: {user_input}
+        """
     else:
         user_message = user_input
 
