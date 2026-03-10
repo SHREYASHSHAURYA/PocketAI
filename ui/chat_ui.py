@@ -50,9 +50,7 @@ uncertain_phrases = [
 DOCS_DIR = os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "data", "documents")
 )
-VECTOR_DB_DIR = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "data", "vector_db")
-)
+VECTOR_DB_DIR = "data/vector_db"
 
 
 def index_uploaded_file(filepath):
