@@ -1,1 +1,1 @@
-MODEL_NAME = "phi3"
+MODEL_NAME = "mistral"

@@ -1,6 +1,7 @@
 import sys
 import os
 import shutil
+
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 os.chdir(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -43,11 +44,15 @@ uncertain_phrases = [
     "as of my last update",
     "i don't have real-time",
     "i do not have real-time",
-    "i don't have access"
+    "i don't have access",
 ]
 
-DOCS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data", "documents"))
-VECTOR_DB_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data", "vector_db"))
+DOCS_DIR = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "data", "documents")
+)
+VECTOR_DB_DIR = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "data", "vector_db")
+)
 
 
 def index_uploaded_file(filepath):
@@ -67,20 +72,24 @@ def process_message(user_input, history, memory_state, upload_file, mode):
     if history is None:
         history = []
 
-    if user_input:
-        history.append({"role": "user", "content": user_input})
-
     if upload_file is not None:
         try:
-            filepath = upload_file.name
+            filepath = upload_file if isinstance(upload_file, str) else upload_file.name
             index_uploaded_file(filepath)
 
-            history.append({"role": "assistant", "content": "Document uploaded and indexed successfully."})
+            history.append(
+                {"role": "user", "content": f"📎 {os.path.basename(filepath)}"}
+            )
 
         except Exception as e:
-            history.append({"role": "assistant", "content": f"Failed to index document: {str(e)}"})
+            history.append(
+                {"role": "assistant", "content": f"Failed to index document: {str(e)}"}
+            )
 
         upload_file = None
+
+    if user_input:
+        history = history + [{"role": "user", "content": user_input}]
 
     if not user_input:
         return "", history, memory_state, gr.update(value=None), mode
@@ -127,10 +136,20 @@ Question: {effective_input}
         history.append({"role": "assistant", "content": response})
         return "", history, memory_state, gr.update(value=None), mode
 
-    context = retrieve_context(effective_input)
+    context = retrieve_context(effective_input or user_input)
 
     if context:
-        user_message = f"Use the following document context to answer the question. If the answer is not in the context, say you do not know.\n\nContext:\n{context}\n\nQuestion: {effective_input}"
+        user_message = f"""Answer the question ONLY using the document context below.
+
+        If the answer is not present in the context, reply exactly:
+        "Not found in document."
+
+        Context:
+        {context}
+
+        Question:
+        {effective_input  or user_input}
+        """
     else:
         user_message = effective_input
 
@@ -169,7 +188,7 @@ Question: {effective_input}
     memory_state.add_user_message(user_input)
     memory_state.add_ai_message(response)
 
-    history.append({"role": "user", "content": user_input})
+    history.append({"role": "assistant", "content": response})
     return "", history, memory_state, gr.update(value=None), mode
 
 
@@ -326,14 +345,16 @@ def build_ui():
         )
 
         with gr.Column(elem_id="input-bar"):
-            mode_display = gr.HTML(value="<div style='font-size:0.75rem;color:#6a50a0;padding:2px 0 6px 2px;'>mode: <b style='color:#b090f0'>auto</b></div>")
+            mode_display = gr.HTML(
+                value="<div style='font-size:0.75rem;color:#6a50a0;padding:2px 0 6px 2px;'>mode: <b style='color:#b090f0'>auto</b></div>"
+            )
 
             with gr.Row():
-                auto_btn      = gr.Button("auto",          min_width=70,  size="sm")
-                code_btn      = gr.Button("💻 code",       min_width=80,  size="sm")
-                calculate_btn = gr.Button("🔢 calculate",  min_width=100, size="sm")
-                search_btn    = gr.Button("🔍 search",     min_width=80,  size="sm")
-                upload_btn    = gr.Button("📎",            min_width=36,  size="sm")
+                auto_btn = gr.Button("auto", min_width=70, size="sm")
+                code_btn = gr.Button("💻 code", min_width=80, size="sm")
+                calculate_btn = gr.Button("🔢 calculate", min_width=100, size="sm")
+                search_btn = gr.Button("🔍 search", min_width=80, size="sm")
+                upload_btn = gr.Button("📎", min_width=36, size="sm")
 
             upload_file = gr.File(
                 label="Upload document",
@@ -357,14 +378,20 @@ def build_ui():
                 )
 
         def set_mode(m):
-            return m, f"<div style='font-size:0.75rem;color:#6a50a0;padding:2px 0 6px 2px;'>mode: <b style='color:#b090f0'>{m}</b></div>"
+            return (
+                m,
+                f"<div style='font-size:0.75rem;color:#6a50a0;padding:2px 0 6px 2px;'>mode: <b style='color:#b090f0'>{m}</b></div>",
+            )
 
         auto_btn.click(fn=lambda: set_mode("auto"), outputs=[mode_state, mode_display])
         code_btn.click(fn=lambda: set_mode("code"), outputs=[mode_state, mode_display])
-        calculate_btn.click(fn=lambda: set_mode("calculate"), outputs=[mode_state, mode_display])
-        search_btn.click(fn=lambda: set_mode("search"), outputs=[mode_state, mode_display])
+        calculate_btn.click(
+            fn=lambda: set_mode("calculate"), outputs=[mode_state, mode_display]
+        )
+        search_btn.click(
+            fn=lambda: set_mode("search"), outputs=[mode_state, mode_display]
+        )
         upload_btn.click(fn=lambda: gr.update(visible=True), outputs=[upload_file])
-
 
         send_btn.click(
             fn=process_message,

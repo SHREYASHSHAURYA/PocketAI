@@ -139,7 +139,7 @@ def extract_expression(text):
         values = re.findall(r"-?\d+\.?\d*", nums)
         return f"({'+'.join(values)})/{len(values)}"
 
-    sum_match = re.search(r"sum of ([0-9,\s]+)", normalized)
+    sum_match = re.search(r"sum of ([0-9,\sand]+)", normalized)
     if sum_match:
         nums = sum_match.group(1)
         values = re.findall(r"-?\d+\.?\d*", nums)
